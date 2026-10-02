@@ -331,7 +331,6 @@ footer b{color:var(--gold-light)}
 
     <div class="btn-row">
       <button class="btn btn-primary" id="btn-analyze">⚡ Breakdown</button>
-      <button class="btn btn-ghost" id="btn-example">Muat contoh</button>
     </div>
   </section>
 
@@ -1065,15 +1064,6 @@ function wireOutputButtons(){
   };
 }
 
-/* ---------- example ---------- */
-const EXAMPLE = {
-  problem: "Penjualan ebook MPASI 'Bye Bye GTM!' stagnan di 5 copy per minggu, padahal traffic landing page naik 3x lipat dalam sebulan terakhir. Banyak pengunjung baca sampai bawah tapi tidak klik tombol order WhatsApp.",
-  user: "Ibu muda 25–35 tahun, anak usia 6–12 bulan, baru pertama kali MPASI dan khawatir anak GTM",
-  outcome: "50 copy terjual per minggu dalam 60 hari ke depan",
-  current: "Promosi organik via Instagram Reels + landing page dengan tombol order WhatsApp",
-  constraint: "Budget iklan nol, dikerjakan sendirian, waktu 2 jam per hari"
-};
-
 /* ---------- wiring ---------- */
 function init(){
   /* restore last input */
@@ -1102,14 +1092,6 @@ function init(){
   });
   $("btn-proceed-anyway").onclick = function(){ $("vague-warn").classList.remove("show"); doAnalyze(); };
   $("btn-clarify").onclick = function(){ $("vague-warn").classList.remove("show"); $("f-problem").focus(); };
-  $("btn-example").onclick = function(){
-    $("f-problem").value = EXAMPLE.problem;
-    $("f-user").value = EXAMPLE.user;
-    $("f-outcome").value = EXAMPLE.outcome;
-    $("f-current").value = EXAMPLE.current;
-    $("f-constraint").value = EXAMPLE.constraint;
-    $("f-problem").focus();
-  };
 
   /* settings */
   $("btn-settings").onclick = openSettings;

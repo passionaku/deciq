@@ -76,3 +76,41 @@ deciq/
 
 - Membutuhkan endpoint AI yang bisa dijangkau browser (perhatikan CORS untuk server lokal).
 - Kualitas breakdown mengikuti kualitas model & kejelasan input.
+
+## Database Supabase (login + riwayat)
+
+Aplikasi memakai **Supabase Auth** (email + password) dan menyimpan tiap hasil
+breakdown ke tabel `analyses`. Anon key sudah tertanam di `index.html`
+(public by design — datanya dilindungi Row Level Security per user).
+
+### Setup sekali saja (di dashboard Supabase)
+
+1. Buka **SQL Editor → New query**, jalankan:
+   ```sql
+   create table if not exists public.analyses (
+     id uuid primary key default gen_random_uuid(),
+     user_id uuid not null references auth.users(id) on delete cascade,
+     created_at timestamptz not null default now(),
+     problem text not null,
+     target_user text,
+     desired_outcome text,
+     current_solution text,
+     constraint text,
+     result jsonb not null
+   );
+
+   alter table public.analyses enable row level security;
+
+   drop policy if exists "Users manage own analyses" on public.analyses;
+   create policy "Users manage own analyses"
+     on public.analyses for all
+     using (auth.uid() = user_id)
+     with check (auth.uid() = user_id);
+   ```
+2. **Authentication → Providers → Email**: pastikan aktif. Opsional: matikan
+   *Confirm email* kalau ingin pendaftar langsung bisa masuk tanpa verifikasi email.
+3. (Opsional) Di **Authentication → Settings**, matikan *Allow new users to sign up*
+   jika hanya kamu yang boleh punya akun — buat akunmu sekali via form Daftar di aplikasi.
+
+Setelah itu buka aplikasi, daftar/masuk, dan tiap hasil breakdown otomatis
+tersimpan ke menu **🕘 Riwayat** (buka ulang / hapus per item).

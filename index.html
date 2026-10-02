@@ -304,8 +304,8 @@ footer b{color:var(--gold-light)}
     <div class="auth-err" id="auth-err"></div>
     <form id="auth-form" autocomplete="on">
       <div class="field">
-        <label for="a-email">Email</label>
-        <input type="text" id="a-email" inputmode="email" placeholder="nama@email.com" autocomplete="email">
+        <label for="a-user">Username</label>
+        <input type="text" id="a-user" placeholder="mis. budi" autocomplete="username" autocapitalize="off" spellcheck="false">
       </div>
       <div class="field">
         <label for="a-pass">Password</label>
@@ -1155,6 +1155,18 @@ const SUPABASE_URL = "https://lzsqvmyvayywkgxwgxih.supabase.co";
 /* Anon key: public by design (dipakai di client), dilindungi Row Level Security. */
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6c3F2bXl2YXl5d2tneHdneGloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5MjM0ODksImV4cCI6MjEwNjQ5OTQ4OX0.60G93gzLhio8TMgBriFvA5DwEPKZmjTLmxSTrhQWI0E";
 let sb = null, currentUser = null, authMode = "login";
+/* Login pakai username: dipetakan ke email internal agar kompatibel dengan Supabase Auth. */
+const DECIQ_EMAIL_DOMAIN = "deciq.internal";
+function usernameToEmail(u){
+  u = String(u == null ? "" : u).trim().toLowerCase();
+  if(u.indexOf("@") >= 0) u = u.split("@")[0];
+  u = u.replace(/[^a-z0-9._-]/g, "");
+  return u ? u + "@" + DECIQ_EMAIL_DOMAIN : "";
+}
+function displayUsername(){
+  const em = (currentUser && currentUser.email) || "";
+  return em.indexOf("@") >= 0 ? em.split("@")[0] : em;
+}
 
 function initSupabase(){
   try{
@@ -1179,9 +1191,10 @@ async function refreshAuthUI(){
   $("app").hidden = !logged;
   if(logged){
     const chip = $("user-chip");
-    chip.textContent = currentUser.email || "";
-    chip.title = currentUser.email || "";
-    $("btn-logout").title = "Keluar (" + (currentUser.email || "") + ")";
+    const uname = displayUsername();
+    chip.textContent = uname;
+    chip.title = uname;
+    $("btn-logout").title = "Keluar (" + uname + ")";
   }
 }
 
@@ -1193,22 +1206,22 @@ function setAuthMode(m){
 }
 function friendlyAuthError(err){
   const msg = (err && err.message) || "Terjadi kesalahan.";
-  if(/invalid login credentials/i.test(msg)) return "Email atau password salah.";
-  if(/user already registered/i.test(msg)) return "Email sudah terdaftar. Silakan masuk.";
-  if(/email not confirmed/i.test(msg)) return "Email belum diverifikasi. Cek inbox kamu.";
+  if(/invalid login credentials/i.test(msg)) return "Username atau password salah.";
+  if(/user already registered/i.test(msg)) return "Username sudah dipakai. Silakan masuk.";
+  if(/email not confirmed/i.test(msg)) return "Akun belum aktif. Hubungi admin.";
   if(/password/i.test(msg) && /weak|short|least|6 characters/i.test(msg)) return "Password minimal 6 karakter.";
   return msg;
 }
 async function handleAuthSubmit(e){
   e.preventDefault();
-  const email = $("a-email").value.trim(), pass = $("a-pass").value;
+  const email = usernameToEmail($("a-user").value), pass = $("a-pass").value;
   const errBox = $("auth-err");
   errBox.classList.remove("show");
   const btn = $("btn-auth-submit");
   btn.disabled = true;
   btn.textContent = authMode === "login" ? "Masuk…" : "Mendaftar…";
   try{
-    if(!email || !pass) throw new Error("Isi email dan password.");
+    if(!email || !pass) throw new Error("Isi username dan password.");
     if(authMode === "login"){
       const { error } = await sb.auth.signInWithPassword({ email: email, password: pass });
       if(error) throw error;

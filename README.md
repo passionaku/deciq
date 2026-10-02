@@ -79,9 +79,11 @@ deciq/
 
 ## Database Supabase (login + riwayat)
 
-Aplikasi memakai **Supabase Auth** (email + password) dan menyimpan tiap hasil
-breakdown ke tabel `analyses`. Anon key sudah tertanam di `index.html`
-(public by design — datanya dilindungi Row Level Security per user).
+Aplikasi memakai **Supabase Auth** dengan login **username + password**
+(username dipetakan otomatis ke email internal `username@deciq.internal`)
+dan menyimpan tiap hasil breakdown ke tabel `analyses`. Anon key sudah
+tertanam di `index.html` (public by design — datanya dilindungi Row Level
+Security per user).
 
 ### Setup sekali saja (di dashboard Supabase)
 
@@ -107,10 +109,10 @@ breakdown ke tabel `analyses`. Anon key sudah tertanam di `index.html`
      using (auth.uid() = user_id)
      with check (auth.uid() = user_id);
    ```
-2. **Authentication → Providers → Email**: pastikan aktif. Opsional: matikan
-   *Confirm email* kalau ingin pendaftar langsung bisa masuk tanpa verifikasi email.
+2. **Authentication → Providers → Email**: pastikan aktif, dan **matikan
+   *Confirm email*** (wajib — username login tidak punya inbox untuk verifikasi).
 3. (Opsional) Di **Authentication → Settings**, matikan *Allow new users to sign up*
    jika hanya kamu yang boleh punya akun — buat akunmu sekali via form Daftar di aplikasi.
 
-Setelah itu buka aplikasi, daftar/masuk, dan tiap hasil breakdown otomatis
-tersimpan ke menu **🕘 Riwayat** (buka ulang / hapus per item).
+Setelah itu buka aplikasi, daftar/masuk dengan username, dan tiap hasil
+breakdown otomatis tersimpan ke menu **🕘 Riwayat** (buka ulang / hapus per item).

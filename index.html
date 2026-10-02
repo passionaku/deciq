@@ -206,6 +206,19 @@ footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 4px}
 .empty-note{color:var(--muted);font-size:13px;font-style:italic}
 @media(max-width:560px){.hero h2{font-size:24px}.card{padding:18px}}
+/* ---------- Mic / voice input ---------- */
+.field-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.field-head label{margin-bottom:0}
+.mic-btn{border:1.5px solid var(--line);background:var(--card);border-radius:999px;min-width:38px;height:32px;padding:0 10px;font-size:15px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:4px;transition:.15s;color:var(--muted);font-family:var(--font)}
+.mic-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.mic-btn:disabled{opacity:.35;cursor:not-allowed}
+.mic-btn.recording{border-color:var(--red);color:var(--red);background:var(--red-soft);animation:pulse 1.2s ease-in-out infinite;font-size:12px;font-weight:800}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(214,69,69,.35)}50%{box-shadow:0 0 0 7px rgba(214,69,69,0)}}
+.mic-status{font-size:12px;color:var(--muted);margin-top:5px;display:none}
+.mic-status.show{display:block}
+.mic-status.err{color:var(--red)}
+.set-divider{border:none;border-top:1px solid var(--line);margin:20px 0 14px}
+.set-section-title{font-size:13px;font-weight:800;margin-bottom:12px}
 @media print{
   header.top,.hero,.steps-strip,#input-card,#settings-modal,.toolbar,footer{display:none!important}
   body{background:#fff} .card{box-shadow:none;break-inside:avoid}
@@ -237,25 +250,45 @@ footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
     <p class="sub">Hanya <b>problem statement</b> yang wajib diisi. Semakin konkret konteksnya, semakin tajam breakdown-nya.</p>
 
     <div class="field">
-      <label for="f-problem">Problem Statement <span class="req">*</span></label>
+      <div class="field-head">
+        <label for="f-problem">Problem Statement <span class="req">*</span></label>
+        <button class="mic-btn" data-target="f-problem" title="Isi dengan suara">🎤</button>
+      </div>
       <textarea id="f-problem" rows="3" placeholder="Contoh: Penjualan ebook MPASI saya stagnan di 5 copy per minggu padahal traffic landing page naik 3x lipat..."></textarea>
+      <div class="mic-status" id="ms-f-problem"></div>
       <div class="hint">Rumuskan semenarik mungkin: apa masalahnya, untuk siapa, dan kenapa itu penting.</div>
     </div>
     <div class="field">
-      <label for="f-user">Target User <span class="opt">(opsional)</span></label>
+      <div class="field-head">
+        <label for="f-user">Target User <span class="opt">(opsional)</span></label>
+        <button class="mic-btn" data-target="f-user" title="Isi dengan suara">🎤</button>
+      </div>
       <input type="text" id="f-user" placeholder="Contoh: Ibu muda 25–35 tahun, anak 6–12 bulan, pertama kali MPASI">
+      <div class="mic-status" id="ms-f-user"></div>
     </div>
     <div class="field">
-      <label for="f-outcome">Desired Outcome <span class="opt">(opsional)</span></label>
+      <div class="field-head">
+        <label for="f-outcome">Desired Outcome <span class="opt">(opsional)</span></label>
+        <button class="mic-btn" data-target="f-outcome" title="Isi dengan suara">🎤</button>
+      </div>
       <textarea id="f-outcome" rows="2" placeholder="Contoh: 50 copy terjual per minggu dalam 60 hari ke depan"></textarea>
+      <div class="mic-status" id="ms-f-outcome"></div>
     </div>
     <div class="field">
-      <label for="f-current">Current Solution / Pendekatan Saat Ini <span class="opt">(opsional)</span></label>
+      <div class="field-head">
+        <label for="f-current">Current Solution / Pendekatan Saat Ini <span class="opt">(opsional)</span></label>
+        <button class="mic-btn" data-target="f-current" title="Isi dengan suara">🎤</button>
+      </div>
       <textarea id="f-current" rows="2" placeholder="Contoh: Promosi organik via Instagram Reels + tombol order WhatsApp di landing page"></textarea>
+      <div class="mic-status" id="ms-f-current"></div>
     </div>
     <div class="field">
-      <label for="f-constraint">Constraint <span class="opt">(opsional)</span></label>
+      <div class="field-head">
+        <label for="f-constraint">Constraint <span class="opt">(opsional)</span></label>
+        <button class="mic-btn" data-target="f-constraint" title="Isi dengan suara">🎤</button>
+      </div>
       <textarea id="f-constraint" rows="2" placeholder="Contoh: Budget iklan nol, dikerjakan sendirian, waktu 2 jam per hari"></textarea>
+      <div class="mic-status" id="ms-f-constraint"></div>
     </div>
 
     <div class="warn-box" id="vague-warn">
@@ -307,6 +340,18 @@ footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
       <label for="s-model">Nama Model</label>
       <input type="text" id="s-model" placeholder="gpt-4o-mini" autocomplete="off" spellcheck="false">
       <div class="hint">Contoh: <code>gpt-4o-mini</code>, <code>openai/gpt-4o-mini</code> (OpenRouter), <code>llama-3.1-8b</code> (lokal).</div>
+    </div>
+    <hr class="set-divider">
+    <div class="set-section-title">🎙 Groq STT — voice input</div>
+    <div class="field">
+      <label for="s-groqkey">Groq API Key</label>
+      <input type="password" id="s-groqkey" placeholder="gsk-..." autocomplete="off" spellcheck="false">
+      <div class="hint">Untuk transkripsi suara tiap field (Whisper via Groq). 🔒 Tersimpan lokal, hanya dikirim ke <code>api.groq.com</code>. Gratis via <code>console.groq.com</code>.</div>
+    </div>
+    <div class="field">
+      <label for="s-groqmodel">Model STT</label>
+      <input type="text" id="s-groqmodel" placeholder="whisper-large-v3-turbo" autocomplete="off" spellcheck="false">
+      <div class="hint">Default: <code>whisper-large-v3-turbo</code> (cepat & akurat). Alternatif: <code>whisper-large-v3</code>.</div>
     </div>
     <div class="conn-status" id="conn-status"></div>
     <div class="btn-row" style="margin-top:16px">
@@ -368,6 +413,8 @@ function openSettings(){
   $("s-endpoint").value = s.endpoint || "";
   $("s-apikey").value = s.apikey || "";
   $("s-model").value = s.model || "";
+  $("s-groqkey").value = s.groqKey || "";
+  $("s-groqmodel").value = s.groqModel || "";
   hideConn();
   $("settings-modal").classList.add("show");
 }
@@ -397,6 +444,129 @@ async function callAI(messages, maxTokens){
   const content = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
   if(!content) throw new Error("Respons API kosong / format tidak dikenali. Pastikan endpoint kompatibel OpenAI Chat Completions.");
   return content;
+}
+
+/* ---------- voice input (Groq STT) ---------- */
+const GROQ_STT_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
+let activeRec = null; /* {recorder, chunks, fieldId, btn, stream, timer, startTs} */
+
+function micSupported(){
+  return typeof window.MediaRecorder !== "undefined"
+    && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+}
+function groqReady(){ return !!loadSettings().groqKey; }
+function groqModel(){ return loadSettings().groqModel || "whisper-large-v3-turbo"; }
+function fmtTime(sec){
+  const m = Math.floor(sec/60), s = sec%60;
+  return m + ":" + (s < 10 ? "0" : "") + s;
+}
+function setMicStatus(fieldId, msg, isErr){
+  const el = $("ms-" + fieldId);
+  if(!el) return;
+  el.textContent = msg || "";
+  el.className = "mic-status" + (msg ? " show" : "") + (isErr ? " err" : "");
+}
+function collectInput(){
+  return {
+    problem: $("f-problem").value.trim(),
+    user: $("f-user").value.trim(),
+    outcome: $("f-outcome").value.trim(),
+    current: $("f-current").value.trim(),
+    constraint: $("f-constraint").value.trim()
+  };
+}
+
+async function toggleMic(fieldId, btn){
+  if(activeRec){ stopRecording(); return; }
+  if(!micSupported()){ setMicStatus(fieldId, "Browser ini tidak mendukung perekaman suara.", true); return; }
+  if(!groqReady()){
+    openSettings();
+    showConn(false, "Isi dulu Groq API Key untuk voice input — lalu Simpan.");
+    return;
+  }
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    let rec;
+    try{
+      const mime = (window.MediaRecorder.isTypeSupported && window.MediaRecorder.isTypeSupported("audio/webm"))
+        ? "audio/webm" : "";
+      rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+    }catch(e){ rec = new MediaRecorder(stream); }
+    const chunks = [];
+    rec.ondataavailable = function(e){ if(e.data && e.data.size) chunks.push(e.data); };
+    rec.onstop = function(){ finishRecording(); };
+    rec.onerror = function(){ cleanupRec(); setMicStatus(fieldId, "Gagal merekam suara.", true); };
+    activeRec = { recorder: rec, chunks: chunks, fieldId: fieldId, btn: btn, stream: stream, timer: null, startTs: Date.now() };
+    rec.start();
+    btn.classList.add("recording");
+    btn.innerHTML = "⏺ 0:00";
+    btn.title = "Klik untuk berhenti & transkripsi";
+    activeRec.timer = setInterval(function(){
+      if(!activeRec) return;
+      btn.innerHTML = "⏺ " + fmtTime(Math.floor((Date.now() - activeRec.startTs) / 1000));
+    }, 500);
+    setMicStatus(fieldId, "Merekam… klik tombol mic lagi untuk berhenti.");
+  }catch(e){
+    setMicStatus(fieldId, "Izin mikrofon ditolak atau tidak tersedia.", true);
+  }
+}
+
+function stopRecording(){
+  if(activeRec && activeRec.recorder && activeRec.recorder.state !== "inactive"){
+    try{ activeRec.recorder.stop(); }catch(e){ cleanupRec(); }
+  }
+}
+
+function cleanupRec(){
+  if(!activeRec) return;
+  const r = activeRec;
+  activeRec = null;
+  if(r.timer) clearInterval(r.timer);
+  try{ r.stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){}
+  r.btn.classList.remove("recording");
+  r.btn.innerHTML = "🎤";
+  r.btn.title = "Isi dengan suara";
+  r.btn.disabled = false;
+}
+
+async function finishRecording(){
+  const r = activeRec;
+  if(!r) return;
+  const fieldId = r.fieldId, btn = r.btn, chunks = r.chunks;
+  cleanupRec();
+  btn.disabled = true;
+  setMicStatus(fieldId, "⏳ Mentranskripsi suara…");
+  try{
+    const blob = new Blob(chunks, { type: "audio/webm" });
+    if(!blob.size) throw new Error("rekaman kosong.");
+    const fd = new FormData();
+    fd.append("file", blob, "rekaman.webm");
+    fd.append("model", groqModel());
+    fd.append("language", "id");
+    fd.append("response_format", "json");
+    let res;
+    try{
+      res = await fetch(GROQ_STT_URL, {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + loadSettings().groqKey },
+        body: fd
+      });
+    }catch(e){ throw new Error("tidak bisa menjangkau api.groq.com (" + e.message + ")"); }
+    let data = null;
+    try{ data = await res.json(); }catch(e){}
+    if(!res.ok) throw new Error((data && data.error && data.error.message) || ("HTTP " + res.status));
+    const text = (data && data.text || "").trim();
+    if(!text) throw new Error("hasil transkripsi kosong.");
+    const el = $(fieldId);
+    el.value = el.value ? el.value.replace(/\s+$/, "") + " " + text : text;
+    try{ localStorage.setItem(LS_INPUT, JSON.stringify(collectInput())); }catch(e){}
+    setMicStatus(fieldId, "✓ Suara ditranskripsi.");
+    setTimeout(function(){ setMicStatus(fieldId, ""); }, 3000);
+    el.focus();
+  }catch(e){
+    setMicStatus(fieldId, "✗ Transkripsi gagal: " + e.message, true);
+  }
+  btn.disabled = false;
 }
 
 /* ---------- vagueness check ---------- */
@@ -721,13 +891,7 @@ async function doAnalyze(){
     window.scrollTo({top:0, behavior:"smooth"});
     return;
   }
-  const inp = {
-    problem: $("f-problem").value.trim(),
-    user: $("f-user").value.trim(),
-    outcome: $("f-outcome").value.trim(),
-    current: $("f-current").value.trim(),
-    constraint: $("f-constraint").value.trim()
-  };
+  const inp = collectInput();
   if(!inp.problem){
     $("f-problem").focus();
     $("f-problem").style.borderColor = "var(--red)";
@@ -901,6 +1065,17 @@ function init(){
   }catch(e){}
 
   $("btn-analyze").onclick = checkVaguenessThenAnalyze;
+
+  /* mic buttons */
+  const supported = micSupported();
+  document.querySelectorAll(".mic-btn").forEach(function(b){
+    if(!supported){
+      b.disabled = true;
+      b.title = "Browser ini tidak mendukung perekaman suara";
+    }else{
+      b.onclick = function(){ toggleMic(b.getAttribute("data-target"), b); };
+    }
+  });
   $("btn-proceed-anyway").onclick = function(){ $("vague-warn").classList.remove("show"); doAnalyze(); };
   $("btn-clarify").onclick = function(){ $("vague-warn").classList.remove("show"); $("f-problem").focus(); };
   $("btn-example").onclick = function(){
@@ -921,7 +1096,9 @@ function init(){
     const s = {
       endpoint: $("s-endpoint").value.trim(),
       apikey: $("s-apikey").value.trim(),
-      model: $("s-model").value.trim()
+      model: $("s-model").value.trim(),
+      groqKey: $("s-groqkey").value.trim(),
+      groqModel: $("s-groqmodel").value.trim()
     };
     if(!s.endpoint || !s.model){
       showConn(false, "URL endpoint dan nama model wajib diisi.");
@@ -934,7 +1111,7 @@ function init(){
   $("btn-test-conn").onclick = async function(){
     const btn = this;
     btn.disabled = true; btn.textContent = "Menghubungi…";
-    const prev = { endpoint: $("s-endpoint").value.trim(), apikey: $("s-apikey").value.trim(), model: $("s-model").value.trim() };
+    const prev = { endpoint: $("s-endpoint").value.trim(), apikey: $("s-apikey").value.trim(), model: $("s-model").value.trim(), groqKey: $("s-groqkey").value.trim(), groqModel: $("s-groqmodel").value.trim() };
     const saved = loadSettings();
     saveSettings(prev);
     try{

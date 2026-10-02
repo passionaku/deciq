@@ -276,13 +276,7 @@ footer b{color:var(--gold-light)}
 
 <main class="wrap">
 
-  <div class="hero">
-    <h2>Bedah masalah sampai ke <span class="hl">akar terdalamnya</span>, lalu bangun ulang solusinya dari nol.</h2>
-    <p>Instrumen berpikir untuk para pengambil keputusan. Deciq memakai first-principles thinking ala Elon Musk: bukan meniru solusi yang sudah ada, tapi membongkar masalah ke fakta paling dasar — lalu menyusun ulang tanpa terikat pola lama.</p>
-    <div class="steps-strip" id="steps-strip"></div>
-  </div>
-
-  <section class="card" id="input-card">
+  <section class="card" id="input-card" style="margin-top:28px">
     <h3>Definisikan Masalah</h3>
 
     <div class="field">
@@ -1082,11 +1076,6 @@ const EXAMPLE = {
 
 /* ---------- wiring ---------- */
 function init(){
-  /* steps strip */
-  $("steps-strip").innerHTML = STEPS.map(function(s,i){
-    return '<span class="step-pill"><b>'+(i+1)+'</b>'+esc(s)+'</span>';
-  }).join("");
-
   /* restore last input */
   try{
     const inp = JSON.parse(localStorage.getItem(LS_INPUT) || "null");

@@ -441,6 +441,17 @@ footer b{color:var(--gold-light)}
       <input type="text" id="s-groqmodel" placeholder="whisper-large-v3-turbo" autocomplete="off" spellcheck="false">
       <div class="hint">Default: <code>whisper-large-v3-turbo</code> (cepat & akurat). Alternatif: <code>whisper-large-v3</code>.</div>
     </div>
+    <hr class="set-divider">
+    <div class="set-section-title">🔑 Akun</div>
+    <div class="field">
+      <label for="s-newpass">Password baru</label>
+      <input type="password" id="s-newpass" placeholder="••••••••" autocomplete="new-password">
+      <div class="hint">Minimal 6 karakter. Berlaku langsung setelah diganti.</div>
+    </div>
+    <div class="conn-status" id="pass-status"></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="btn-change-pass">Ganti Password</button>
+    </div>
     <div class="conn-status" id="conn-status"></div>
     <div class="btn-row" style="margin-top:16px">
       <button class="btn btn-primary" id="btn-save-settings">Simpan</button>
@@ -1344,6 +1355,25 @@ function init(){
   $("btn-history").onclick = openHistory;
   $("btn-close-history").onclick = function(){ $("history-modal").classList.remove("show"); };
   $("history-modal").addEventListener("click", function(e){ if(e.target === this) this.classList.remove("show"); });
+  $("btn-change-pass").onclick = async function(){
+    const np = $("s-newpass").value;
+    const st = $("pass-status");
+    st.className = "conn-status"; st.textContent = "";
+    if(!sbReady()){ st.className = "conn-status show fail"; st.textContent = "✗ Harus login dulu."; return; }
+    if(!np || np.length < 6){ st.className = "conn-status show fail"; st.textContent = "✗ Password minimal 6 karakter."; return; }
+    const btn = this;
+    btn.disabled = true; btn.textContent = "Menyimpan…";
+    try{
+      const { error } = await sb.auth.updateUser({ password: np });
+      if(error) throw error;
+      $("s-newpass").value = "";
+      st.className = "conn-status show ok"; st.textContent = "✓ Password berhasil diganti.";
+      setTimeout(function(){ st.className = "conn-status"; st.textContent = ""; }, 3000);
+    }catch(e){
+      st.className = "conn-status show fail"; st.textContent = "✗ Gagal: " + e.message;
+    }
+    btn.disabled = false; btn.textContent = "Ganti Password";
+  };
 
   /* restore last input */
   try{

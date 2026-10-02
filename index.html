@@ -462,6 +462,10 @@ img.logo-lg{width:64px;height:64px;margin:0 auto 14px}
         <input type="text" id="s-groqmodel" placeholder="whisper-large-v3-turbo" autocomplete="off" spellcheck="false">
         <div class="hint">Default: <code>whisper-large-v3-turbo</code> (cepat & akurat). Alternatif: <code>whisper-large-v3</code>.</div>
       </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="btn-test-groq">Test Koneksi</button>
+      </div>
+      <div class="conn-status" id="groq-status"></div>
     </div>
 
     <div class="tab-panel" id="tab-account" role="tabpanel">
@@ -545,6 +549,8 @@ function openSettings(){
   $("s-groqkey").value = s.groqKey || "";
   $("s-groqmodel").value = s.groqModel || "";
   hideConn();
+  $("pass-status").textContent = ""; $("pass-status").className = "conn-status";
+  $("groq-status").textContent = ""; $("groq-status").className = "conn-status";
   const firstTab = document.querySelector(".tab-btn");
   if(firstTab) firstTab.click();
   $("settings-modal").classList.add("show");
@@ -1534,6 +1540,35 @@ function init(){
       showConn(false, "✗ Gagal: " + e.message);
     }
     btn.disabled = false; btn.textContent = "Test Koneksi";
+  };
+
+  /* Test koneksi Groq: cek API key valid via daftar model (tanpa pakai kuota transkripsi). */
+  $("btn-test-groq").onclick = async function(){
+    const btn = this;
+    btn.disabled = true; btn.textContent = "Menghubungi…";
+    const k = $("s-groqkey").value.trim();
+    const st = $("groq-status");
+    function gstat(cls, msg){ st.className = "conn-status " + cls; st.textContent = msg; }
+    try{
+      if(!k){ gstat("warn", "⚠ Isi Groq API Key dulu."); return; }
+      gstat("", "⏳ Menghubungi Groq…");
+      const r = await fetch("https://api.groq.com/openai/v1/models", {
+        headers: { "Authorization": "Bearer " + k }
+      });
+      if(r.ok){
+        const d = await r.json().catch(function(){ return {}; });
+        const n = (d.data || []).length;
+        gstat("ok", "✓ Terhubung ke Groq (" + n + " model tersedia). Voice input siap dipakai.");
+      }else if(r.status === 401){
+        gstat("err", "✗ API key tidak valid (HTTP 401). Cek lagi key-nya.");
+      }else{
+        gstat("err", "✗ Gagal (HTTP " + r.status + ").");
+      }
+    }catch(e){
+      gstat("err", "✗ Gagal: " + e.message + " (kemungkinan offline).");
+    }finally{
+      btn.disabled = false; btn.textContent = "Test Koneksi";
+    }
   };
 }
 document.addEventListener("DOMContentLoaded", init);

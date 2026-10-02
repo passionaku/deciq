@@ -71,7 +71,6 @@ deciq/
   dan header `Authorization: Bearer <api-key>` (jika key diisi).
 - Respons AI wajib JSON sesuai skema di system prompt; parser toleran terhadap
   code fence markdown.
-- Contoh siap pakai tersedia via tombol **Muat contoh**.
 
 ## Batasan
 

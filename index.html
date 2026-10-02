@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deciq — First-Principles Problem Breakdown</title>
+<meta name="description" content="Deciq membedah masalah sampai ke akar terdalam dengan first-principles thinking: audit asumsi, interogasi requirement, 5 Whys, delete list, rebuild dari nol.">
+<style>
+:root{
+  --bg:#f6f7fb; --card:#ffffff; --ink:#1a1d29; --muted:#6b7280;
+  --line:#e6e8f0; --accent:#4f46e5; --accent-soft:#eef0ff;
+  --green:#0e9f6e; --green-soft:#e7f8f1; --amber:#c77414; --amber-soft:#fdf3e3;
+  --red:#d64545; --red-soft:#fdecec; --radius:14px;
+  --shadow:0 6px 24px rgba(30,35,70,.07);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1020px;margin:0 auto;padding:0 20px}
+
+/* ---------- Header ---------- */
+header.top{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 20px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#4f46e5,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px;box-shadow:var(--shadow)}
+.brand h1{font-size:20px;letter-spacing:.5px}
+.brand small{display:block;font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.3px}
+.icon-btn{border:1px solid var(--line);background:var(--card);border-radius:10px;width:42px;height:42px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+.icon-btn:hover{background:var(--accent-soft);border-color:var(--accent)}
+
+/* ---------- Hero / intro ---------- */
+.hero{padding:34px 0 6px;text-align:left}
+.hero h2{font-size:30px;line-height:1.25;margin-bottom:8px}
+.hero h2 .hl{color:var(--accent)}
+.hero p{color:var(--muted);max-width:680px;font-size:15px}
+.steps-strip{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 4px}
+.step-pill{font-size:12px;font-weight:600;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 12px;color:var(--muted)}
+.step-pill b{color:var(--accent);margin-right:4px}
+
+/* ---------- Cards & form ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin:20px 0}
+.card h3{font-size:17px;margin-bottom:4px}
+.card .sub{font-size:13px;color:var(--muted);margin-bottom:16px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}
+.field label .req{color:var(--red);font-weight:800}
+.field label .opt{color:var(--muted);font-weight:500;font-size:12px}
+.field textarea,.field input[type=text],.field input[type=password]{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px 13px;font-family:var(--font);font-size:14px;color:var(--ink);background:#fbfbfe;transition:.15s;resize:vertical}
+.field textarea:focus,.field input:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px var(--accent-soft)}
+.field .hint{font-size:12px;color:var(--muted);margin-top:5px}
+.warn-box{background:var(--amber-soft);border:1px solid #f0d9a8;border-radius:10px;padding:13px 15px;font-size:13px;margin:14px 0;display:none}
+.warn-box.show{display:block}
+.warn-box strong{color:#8a5410}
+.warn-box .actions{margin-top:10px;display:flex;gap:10px}
+.btn{border:none;border-radius:10px;padding:12px 22px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.15s;display:inline-flex;align-items:center;gap:8px}
+.btn-primary{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;box-shadow:0 4px 14px rgba(79,70,229,.35)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(79,70,229,.45)}
+.btn-primary:disabled{opacity:.55;cursor:wait;transform:none}
+.btn-ghost{background:var(--card);border:1.5px solid var(--line);color:var(--ink)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
+
+/* ---------- Progress ---------- */
+#progress{display:none}
+#progress.show{display:block}
+.prog-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.spinner{width:26px;height:26px;border:3px solid var(--accent-soft);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.prog-steps{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.prog-step{font-size:12px;font-weight:600;border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--muted);background:#fafbfe;transition:.3s}
+.prog-step.active{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.prog-step.done{border-color:var(--green);color:var(--green);background:var(--green-soft)}
+
+/* ---------- Output sections ---------- */
+#output{display:none}
+#output.show{display:block}
+.sec{margin:26px 0}
+.sec-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
+.sec-num{flex:0 0 34px;width:34px;height:34px;border-radius:10px;background:var(--ink);color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center}
+.sec-head h3{font-size:18px}
+.sec-head p{font-size:13px;color:var(--muted)}
+.reframe{background:linear-gradient(135deg,#eef0ff,#f7f0ff);border:1px solid #d9dcff;border-radius:var(--radius);padding:20px;margin-bottom:14px}
+.reframe .lbl{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+.reframe p{font-size:15px}
+.reframe + .reframe{margin-top:12px}
+
+/* layer tree */
+.tree{margin:6px 0}
+.tnode{border-left:3px solid var(--line);padding:2px 0 2px 0;margin-left:12px}
+.tnode .tbox{background:#fafbfe;border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:8px 0 8px 18px;position:relative}
+.tnode .tbox::before{content:"";position:absolute;left:-21px;top:50%;width:18px;height:2px;background:var(--line)}
+.tnode.depth-0{border-left-color:var(--accent)}
+.tnode.depth-0>.tbox{border-color:#c9cdfc;background:var(--accent-soft)}
+.tnode.depth-max>.tbox{border-color:#f0c98a;background:var(--amber-soft)}
+.tnode .tt{font-weight:700;font-size:14px}
+.tnode .td{font-size:13px;color:var(--muted)}
+.tnode .depth-tag{font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+.tnode.depth-max .depth-tag{color:var(--amber)}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13px;background:#fff}
+th{background:#f3f4fa;text-align:left;padding:11px 12px;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap}
+td{padding:11px 12px;border-top:1px solid var(--line);vertical-align:top}
+tr:hover td{background:#fafbff}
+.badge{display:inline-block;font-size:11px;font-weight:800;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.b-fakta{background:var(--green-soft);color:var(--green)}
+.b-opini{background:var(--amber-soft);color:var(--amber)}
+.b-asumsi{background:#f0e9ff;color:#7c3aed}
+.score{display:inline-flex;align-items:center;gap:8px;font-weight:800;font-size:13px}
+.score .bar{width:70px;height:8px;background:#eef0f6;border-radius:99px;overflow:hidden}
+.score .bar i{display:block;height:100%;border-radius:99px}
+.s-low i{background:var(--green)} .s-mid i{background:var(--amber)} .s-high i{background:var(--red)}
+.rec-hapus_sekarang{background:var(--red-soft);color:var(--red)}
+.rec-opsional{background:var(--amber-soft);color:var(--amber)}
+.rec-tunda_v2{background:#e8f0fe;color:#2b5fc7}
+.rec-pertahankan{background:var(--green-soft);color:var(--green)}
+
+/* requirement cards */
+.req-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.req-card{border:1px solid var(--line);border-radius:12px;padding:15px;background:#fff}
+.req-card h4{font-size:14px;margin-bottom:8px}
+.req-card dl{font-size:12.5px}
+.req-card dt{font-weight:700;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px;margin-top:8px}
+.req-card dd{margin:2px 0 0}
+
+/* whys */
+.why{border:1px solid var(--line);border-radius:12px;margin:10px 0;background:#fff;overflow:hidden}
+.why-head{padding:12px 16px;background:#fafbfe;border-bottom:1px dashed var(--line);font-weight:700;font-size:14px;color:var(--accent)}
+.why-body{padding:12px 16px;font-size:13.5px}
+.why-children{margin:4px 16px 12px 26px;border-left:3px solid var(--accent-soft);padding-left:6px}
+.fund-chip{display:inline-block;background:var(--green-soft);color:var(--green);border:1px solid #bfe8d4;font-weight:700;font-size:12px;border-radius:999px;padding:4px 12px;margin:4px 6px 4px 0}
+.truth-list{list-style:none;margin-top:10px}
+.truth-list li{background:var(--accent-soft);border:1px solid #d9dcff;border-radius:10px;padding:10px 14px;margin:8px 0;font-size:14px}
+.truth-list li::before{content:"◆ ";color:var(--accent);font-size:11px}
+
+/* simplify before/after */
+.ba{display:grid;grid-template-columns:1fr 40px 1fr;gap:8px;align-items:stretch;margin:12px 0}
+.ba .col{border-radius:12px;padding:14px;font-size:13.5px}
+.ba .before{background:#fdf2f2;border:1px solid #f3c8c8}
+.ba .after{background:var(--green-soft);border:1px solid #bfe8d4}
+.ba .col .lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.ba .before .lbl{color:var(--red)} .ba .after .lbl{color:var(--green)}
+.ba .arrow{display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--muted)}
+.ba-area{font-size:13px;font-weight:700;margin:14px 0 2px;color:var(--ink)}
+
+/* rebuild */
+.rebuild-box{background:linear-gradient(135deg,#0f172a,#312e81);color:#eef0ff;border-radius:var(--radius);padding:22px;margin:6px 0}
+.rebuild-box h4{font-size:14px;letter-spacing:.5px;margin-bottom:8px;color:#c7d2fe}
+.rebuild-box p{font-size:14.5px;margin-bottom:12px}
+.rebuild-box ol{margin:0 0 12px 20px;font-size:13.5px}
+.rebuild-box ul{list-style:none;margin:0}
+.rebuild-box ul li{font-size:13.5px;margin:7px 0;padding-left:26px;position:relative}
+.rebuild-box ul li::before{content:"✦";position:absolute;left:4px;color:#a5b4fc}
+
+/* accelerate / automate */
+.aa-warn{background:var(--red-soft);border:1px solid #f3c8c8;border-radius:10px;padding:12px 15px;font-size:13px;margin-bottom:14px}
+.aa-warn strong{color:var(--red)}
+.aa-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:720px){.aa-grid{grid-template-columns:1fr}.ba{grid-template-columns:1fr}.ba .arrow{transform:rotate(90deg)}}
+.aa-col{border:1px solid var(--line);border-radius:12px;padding:15px;background:#fff}
+.aa-col h4{font-size:14px;margin-bottom:8px}
+.aa-col.acc{border-top:3px solid var(--amber)}
+.aa-col.aut{border-top:3px solid var(--accent)}
+.aa-item{font-size:13px;border-top:1px dashed var(--line);padding:9px 0}
+.aa-item:first-of-type{border-top:none}
+.aa-item b{display:block;font-size:13px}
+
+/* mvp */
+.mvp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:12px}
+.mvp-card{background:var(--accent-soft);border:1px solid #d9dcff;border-radius:12px;padding:13px}
+.mvp-card .lbl{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--accent)}
+.mvp-card p{font-size:13.5px;font-weight:600;margin-top:4px}
+.deferred{background:#fafbfe;border:1px dashed var(--line);border-radius:12px;padding:13px 16px;font-size:13.5px}
+.deferred .lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px}
+.deferred ul{margin-left:18px;color:var(--muted)}
+
+/* validation */
+.val-card{border:1px solid var(--line);border-left:4px solid var(--red);border-radius:12px;padding:15px 17px;margin:12px 0;background:#fff}
+.val-card.mid{border-left-color:var(--amber)}
+.val-card.low{border-left-color:var(--green)}
+.val-card h4{font-size:14px;margin-bottom:6px}
+.val-meta{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--muted);margin-top:8px}
+.val-meta b{color:var(--ink)}
+
+/* error */
+.err-box{background:var(--red-soft);border:1px solid #f3c8c8;border-radius:12px;padding:16px 18px;font-size:13.5px;display:none;margin:20px 0}
+.err-box.show{display:block}
+.err-box strong{color:var(--red)}
+.err-box ul{margin:8px 0 0 18px}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(20,22,35,.5);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:100;padding:18px}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:16px;max-width:520px;width:100%;padding:26px;box-shadow:0 20px 60px rgba(0,0,0,.25);max-height:90vh;overflow-y:auto}
+.modal h3{font-size:18px;margin-bottom:4px}
+.modal .sub{font-size:13px;color:var(--muted);margin-bottom:18px}
+.modal .field input{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.conn-status{font-size:13px;border-radius:10px;padding:10px 13px;margin-top:12px;display:none}
+.conn-status.show{display:block}
+.conn-status.ok{background:var(--green-soft);color:var(--green);border:1px solid #bfe8d4}
+.conn-status.fail{background:var(--red-soft);color:var(--red);border:1px solid #f3c8c8}
+
+footer{border-top:1px solid var(--line);margin-top:40px;padding:22px 0 34px;color:var(--muted);font-size:12.5px}
+footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 4px}
+.empty-note{color:var(--muted);font-size:13px;font-style:italic}
+@media(max-width:560px){.hero h2{font-size:24px}.card{padding:18px}}
+@media print{
+  header.top,.hero,.steps-strip,#input-card,#settings-modal,.toolbar,footer{display:none!important}
+  body{background:#fff} .card{box-shadow:none;break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <div class="logo">D</div>
+      <div><h1>Deciq<small>FIRST-PRINCIPLES PROBLEM BREAKDOWN</small></h1></div>
+    </div>
+    <button class="icon-btn" id="btn-settings" title="Pengaturan Model AI" aria-label="Pengaturan">⚙️</button>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="hero">
+    <h2>Bedah masalah sampai ke <span class="hl">akar terdalamnya</span>, lalu bangun ulang solusinya dari nol.</h2>
+    <p>Deciq memakai first-principles thinking ala Elon Musk: bukan meniru solusi yang sudah ada, tapi membongkar masalah ke fakta paling dasar — lalu menyusun ulang tanpa terikat pola lama.</p>
+    <div class="steps-strip" id="steps-strip"></div>
+  </div>
+
+  <section class="card" id="input-card">
+    <h3>📝 Definisikan Masalah</h3>
+    <p class="sub">Hanya <b>problem statement</b> yang wajib diisi. Semakin konkret konteksnya, semakin tajam breakdown-nya.</p>
+
+    <div class="field">
+      <label for="f-problem">Problem Statement <span class="req">*</span></label>
+      <textarea id="f-problem" rows="3" placeholder="Contoh: Penjualan ebook MPASI saya stagnan di 5 copy per minggu padahal traffic landing page naik 3x lipat..."></textarea>
+      <div class="hint">Rumuskan semenarik mungkin: apa masalahnya, untuk siapa, dan kenapa itu penting.</div>
+    </div>
+    <div class="field">
+      <label for="f-user">Target User <span class="opt">(opsional)</span></label>
+      <input type="text" id="f-user" placeholder="Contoh: Ibu muda 25–35 tahun, anak 6–12 bulan, pertama kali MPASI">
+    </div>
+    <div class="field">
+      <label for="f-outcome">Desired Outcome <span class="opt">(opsional)</span></label>
+      <textarea id="f-outcome" rows="2" placeholder="Contoh: 50 copy terjual per minggu dalam 60 hari ke depan"></textarea>
+    </div>
+    <div class="field">
+      <label for="f-current">Current Solution / Pendekatan Saat Ini <span class="opt">(opsional)</span></label>
+      <textarea id="f-current" rows="2" placeholder="Contoh: Promosi organik via Instagram Reels + tombol order WhatsApp di landing page"></textarea>
+    </div>
+    <div class="field">
+      <label for="f-constraint">Constraint <span class="opt">(opsional)</span></label>
+      <textarea id="f-constraint" rows="2" placeholder="Contoh: Budget iklan nol, dikerjakan sendirian, waktu 2 jam per hari"></textarea>
+    </div>
+
+    <div class="warn-box" id="vague-warn">
+      <strong>⚠️ Rumusan masalah terlihat masih kabur.</strong>
+      <div id="vague-list" style="margin-top:6px"></div>
+      <div class="actions">
+        <button class="btn btn-ghost" id="btn-clarify" style="padding:9px 16px;font-size:13px">Perjelas dulu</button>
+        <button class="btn btn-primary" id="btn-proceed-anyway" style="padding:9px 16px;font-size:13px">Tetap lanjutkan</button>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btn-analyze">⚡ Breakdown dengan First Principles</button>
+      <button class="btn btn-ghost" id="btn-example">Muat contoh</button>
+    </div>
+  </section>
+
+  <div class="err-box" id="err-box"></div>
+
+  <section class="card" id="progress">
+    <div class="prog-head">
+      <div class="spinner"></div>
+      <div><h3 style="font-size:16px">Menganalisis dengan first principles…</h3>
+      <p class="sub" style="margin:0" id="prog-label">Menyiapkan dekomposisi</p></div>
+    </div>
+    <div class="prog-steps" id="prog-steps"></div>
+  </section>
+
+  <section id="output"></section>
+
+</main>
+
+<!-- Settings modal -->
+<div class="modal-bg" id="settings-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="set-title">
+    <h3 id="set-title">⚙️ Pengaturan Model AI</h3>
+    <p class="sub">Deciq memanggil model AI pilihanmu lewat API yang kompatibel dengan format <b>OpenAI Chat Completions</b>. Data tersimpan hanya di browser ini (localStorage).</p>
+    <div class="field">
+      <label for="s-endpoint">URL Endpoint</label>
+      <input type="text" id="s-endpoint" placeholder="https://api.openai.com/v1/chat/completions" autocomplete="off" spellcheck="false">
+      <div class="hint">Contoh: OpenAI, OpenRouter (<code>.../api/v1/chat/completions</code>), atau server lokal seperti LM Studio / Ollama (via proxy yang mendukung CORS).</div>
+    </div>
+    <div class="field">
+      <label for="s-apikey">API Key</label>
+      <input type="password" id="s-apikey" placeholder="sk-..." autocomplete="off" spellcheck="false">
+      <div class="hint">🔒 Tidak pernah dikirim ke mana pun kecuali endpoint di atas. Kosongkan jika endpoint tidak butuh key.</div>
+    </div>
+    <div class="field">
+      <label for="s-model">Nama Model</label>
+      <input type="text" id="s-model" placeholder="gpt-4o-mini" autocomplete="off" spellcheck="false">
+      <div class="hint">Contoh: <code>gpt-4o-mini</code>, <code>openai/gpt-4o-mini</code> (OpenRouter), <code>llama-3.1-8b</code> (lokal).</div>
+    </div>
+    <div class="conn-status" id="conn-status"></div>
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn btn-primary" id="btn-save-settings">Simpan</button>
+      <button class="btn btn-ghost" id="btn-test-conn">Test Koneksi</button>
+      <button class="btn btn-ghost" id="btn-close-settings">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span><b>Deciq</b> — breakdown masalah dengan first-principles thinking.</span>
+    <span>API key tersimpan lokal di browser kamu.</span>
+  </div>
+</footer>
+
+<script>
+"use strict";
+/* Guard untuk environment tanpa scrollIntoView (mis. test DOM headless) */
+if (typeof Element !== "undefined" && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = function(){};
+}
+/* ================= Deciq — app logic ================= */
+const $ = (id) => document.getElementById(id);
+
+const STEPS = [
+  "Pahami Masalah", "Audit Asumsi", "Interogasi Requirement", "Fakta Dasar",
+  "Daftar Hapus", "Solusi Sederhana", "Bangun Ulang",
+  "Otomasi & Percepatan", "Rekomendasi MVP", "Validasi"
+];
+const STEP_DESC = [
+  "Reframe masalah & visualisasi tiap layer sampai akar",
+  "Pisahkan fakta vs opini + Assumption Risk Score",
+  "Tanya setiap requirement: pemilik, tujuan, bukti, risiko dihapus",
+  "Dekomposisi + 5 Whys sampai fundamental truths",
+  "Kandidat hapus + Deletion Score + rekomendasi keputusan",
+  "Sederhanakan yang tersisa (before → after)",
+  "Susun solusi baru dari nol, bebas pola lama",
+  "Percepat dulu, otomasi paling akhir",
+  "Distilasi ke scope MVP",
+  "Rencana eksperimen untuk asumsi paling berisiko"
+];
+
+/* ---------- settings ---------- */
+const LS_KEY = "deciq_settings_v1";
+const LS_INPUT = "deciq_last_input_v1";
+function loadSettings(){
+  try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; }
+  catch(e){ return {}; }
+}
+function saveSettings(s){ localStorage.setItem(LS_KEY, JSON.stringify(s)); }
+function settingsReady(){
+  const s = loadSettings();
+  return !!(s.endpoint && s.model);
+}
+function openSettings(){
+  const s = loadSettings();
+  $("s-endpoint").value = s.endpoint || "";
+  $("s-apikey").value = s.apikey || "";
+  $("s-model").value = s.model || "";
+  hideConn();
+  $("settings-modal").classList.add("show");
+}
+function closeSettings(){ $("settings-modal").classList.remove("show"); }
+function hideConn(){ const el=$("conn-status"); el.className="conn-status"; el.textContent=""; }
+function showConn(ok,msg){ const el=$("conn-status"); el.className="conn-status show "+(ok?"ok":"fail"); el.textContent=msg; }
+
+async function callAI(messages, maxTokens){
+  const s = loadSettings();
+  const headers = {"Content-Type":"application/json"};
+  if (s.apikey) headers["Authorization"] = "Bearer " + s.apikey;
+  const body = { model: s.model, messages: messages, temperature: 0.7 };
+  if (maxTokens) body.max_tokens = maxTokens;
+  let res;
+  try {
+    res = await fetch(s.endpoint, { method:"POST", headers: headers, body: JSON.stringify(body) });
+  } catch(e){
+    throw new Error("NETWORK: Tidak bisa menjangkau endpoint. Cek URL & koneksi. ("+e.message+")");
+  }
+  let data;
+  try { data = await res.json(); }
+  catch(e){ throw new Error("Endpoint tidak mengembalikan JSON valid (HTTP "+res.status+"). Pastikan URL mengarah ke chat-completions API."); }
+  if(!res.ok){
+    const msg = (data && data.error && (data.error.message || JSON.stringify(data.error))) || ("HTTP "+res.status);
+    throw new Error("API error: "+msg);
+  }
+  const content = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+  if(!content) throw new Error("Respons API kosong / format tidak dikenali. Pastikan endpoint kompatibel OpenAI Chat Completions.");
+  return content;
+}
+
+/* ---------- vagueness check ---------- */
+function vaguenessIssues(text){
+  const t = text.trim();
+  const issues = [];
+  if(t.length < 40) issues.push("Problem statement kurang dari 40 karakter — tambahkan detail: apa masalahnya, untuk siapa, dan dampaknya.");
+  if(!/[.?!]/.test(t) && t.split(/\s+/).length < 12) issues.push("Terlalu singkat untuk di-breakdown tajam — coba 2–3 kalimat.");
+  if(!/(untuk|agar|supaya|karena|sehingga|dampak|akibat)/i.test(t)) issues.push("Belum jelas konteks/tujuannya — siapa yang terdampak dan kenapa ini penting?");
+  if(/^(masalah|problem|gimana|bagaimana)($|\s)/i.test(t) && t.length < 60) issues.push("Masih berupa judul, bukan rumusan masalah yang konkret.");
+  return issues;
+}
+
+/* ---------- prompts ---------- */
+function buildSystemPrompt(){
+  return [
+  "Kamu adalah Deciq, mesin dekomposisi masalah berbasis first-principles thinking ala Elon Musk.",
+  "Prinsipmu: bongkar masalah ke kebenaran paling dasar (bukan analogi, bukan 'karena biasanya begitu'), hapus yang tidak esensial, sederhanakan, lalu bangun ulang dari nol.",
+  "",
+  "ATURAN OUTPUT (wajib dipatuhi):",
+  "1. Jawab HANYA dengan satu objek JSON valid. Tanpa markdown fence, tanpa teks pembuka/penutup.",
+  "2. Bahasa: Bahasa Indonesia yang jelas dan konkret. Hindari generalitas.",
+  "3. Semua skor adalah integer 1-10.",
+  "4. Ikuti persis skema field di bawah. Jika sebuah list kosong, isi array kosong [].",
+  "",
+  "SKEMA JSON:",
+  "{",
+  '  "problem_reframed": "rumusan ulang masalah yang tajam, 1-2 kalimat",',
+  '  "desired_outcome_clarified": "desired outcome yang diperjelas, spesifik & terukur",',
+  '  "layers": [ {"title":"gejala/level masalah","description":"penjelasan singkat","children":[ ...rekursif, node terdalam = akar masalah... ]} ],',
+  '    // pohon masalah: node teratas = gejala permukaan, children = penyebab yang lebih dalam. Maks 4 level, 2-4 children per node.',
+  '  "assumptions": [ {"statement":"...","type":"fakta|opini","risk_score":1-10,"reason":"kenapa skor ini"} ],',
+  '  "requirements": [ {"item":"...","owner":"siapa pemilik/pengaju","purpose":"tujuannya","evidence":"bukti pendukung (atau \\"tidak ada bukti\\")","risk_if_removed":"risiko jika dihapus"} ],',
+  '  "fundamentals": {',
+  '    "tujuan": "...", "constraints": ["..."], "components": ["komponen dasar masalah"],',
+  '    "evidence": ["bukti/fakta pendukung"], "alternatives": ["alternatif pendekatan yang mungkin"],',
+  '    "five_whys": [ {"question":"Mengapa ...?","answer":"...","is_fundamental":false,"children":[ ...rekursif... ]} ],',
+  '    // rantai mengapa bercabang; lanjutkan sampai jawaban benar-benar fundamental (tidak lagi "karena biasanya begitu").',
+  '    // Tandai node terminal dengan is_fundamental:true. JANGAN berhenti otomatis di kedalaman 5.',
+  '    "fundamental_truths": ["kebenaran dasar 1","kebenaran dasar 2"]',
+  '  },',
+  '  "delete_list": [ {"item":"...","category":"requirement|komponen|asumsi","reason":"...","risk":"...","deletion_score":1-10,"recommendation":"hapus_sekarang|opsional|tunda_v2|pertahankan"} ],',
+  '  "simplify": [ {"area":"...","before":"kondisi/versi saat ini","after":"versi yang disederhanakan"} ],',
+  '  "rebuild": {"solution":"deskripsi solusi baru yang dibangun dari fundamental truths","steps":["langkah 1",...],"why_different":["alasan kenapa berbeda dari pola industri/kompetitor"]},',
+  '  "accelerate_automate": {',
+  '    "note": "peringatan eksplisit: otomasi SELALU paling akhir, tidak pernah sebelum delete & simplify",',
+  '    "accelerate": [ {"area":"...","how":"cara mempercepat","expected_gain":"..."} ],',
+  '    "automate": [ {"area":"...","how":"...","prerequisite":"syarat sebelum diotomasi","risk_if_automated_early":"risiko jika diotomasi prematur"} ]',
+  '  },',
+  '  "mvp": {"core_user":"...","core_problem":"...","core_promise":"...","core_input":"...","core_output":"...","deferred":["fitur/aspek yang ditunda"]},',
+  '  "validation": [ {"assumption":"...","risk_score":1-10,"hypothesis":"Jika ... maka ...","method":"...","metric":"...","duration":"..."} ]',
+  '  // validation: urutkan dari risk_score tertinggi, hanya untuk asumsi paling berisiko',
+  "}"
+  ].join("\n");
+}
+
+function buildUserPrompt(inp){
+  const lines = [
+    "Breakdown masalah berikut dengan 10 langkah first-principles:",
+    "",
+    "PROBLEM STATEMENT: " + inp.problem,
+    "TARGET USER: " + (inp.user || "(tidak disebutkan)"),
+    "DESIRED OUTCOME: " + (inp.outcome || "(tidak disebutkan — rumuskan yang paling masuk akal lalu perjelas)"),
+    "CURRENT SOLUTION/APPROACH: " + (inp.current || "(tidak disebutkan)"),
+    "CONSTRAINT: " + (inp.constraint || "(tidak disebutkan)")
+  ];
+  return lines.join("\n");
+}
+
+function extractJSON(text){
+  let t = text.trim();
+  t = t.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
+  const start = t.indexOf("{");
+  if(start === -1) throw new Error("AI tidak mengembalikan JSON. Coba lagi.");
+  let depth = 0, inStr = false, esc = false;
+  for(let i = start; i < t.length; i++){
+    const c = t[i];
+    if(inStr){ if(esc){ esc = false; } else if(c === "\\"){ esc = true; } else if(c === '"'){ inStr = false; } }
+    else { if(c === '"'){ inStr = true; } else if(c === "{"){ depth++; } else if(c === "}"){ depth--; if(depth === 0){ t = t.slice(start, i+1); break; } } }
+  }
+  return JSON.parse(t);
+}
+
+/* ---------- escaping ---------- */
+function esc(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+function scoreBadge(score){
+  score = Math.max(1, Math.min(10, parseInt(score,10) || 1));
+  const cls = score <= 3 ? "s-low" : score <= 7 ? "s-mid" : "s-high";
+  return '<span class="score '+cls+'"><span class="bar"><i style="width:'+(score*10)+'%"></i></span>'+score+'/10</span>';
+}
+function typeBadge(t){
+  t = String(t||"").toLowerCase();
+  if(t.indexOf("fakta") === 0) return '<span class="badge b-fakta">FAKTA</span>';
+  if(t.indexOf("opini") === 0) return '<span class="badge b-opini">OPINI</span>';
+  return '<span class="badge b-asumsi">'+esc(t.toUpperCase()||"ASUMSI")+'</span>';
+}
+function recBadge(r){
+  const map = {
+    hapus_sekarang:["rec-hapus_sekarang","🗑 Hapus sekarang"],
+    opsional:["rec-opsional","◐ Opsional"],
+    tunda_v2:["rec-tunda_v2","⏳ Tunda ke v2"],
+    pertahankan:["rec-pertahankan","✓ Pertahankan"]
+  };
+  const m = map[r] || ["rec-opsional", esc(r)];
+  return '<span class="badge '+m[0]+'">'+m[1]+'</span>';
+}
+
+/* ---------- renderers ---------- */
+function renderLayerTree(nodes, depth){
+  if(!nodes || !nodes.length) return '<p class="empty-note">Tidak ada data layer.</p>';
+  depth = depth || 0;
+  let html = '<div class="tree">';
+  nodes.forEach(function(n, idx){
+    const kids = n.children || [];
+    const isMax = depth > 0 && kids.length === 0;
+    const tag = depth === 0 ? "Gejala permukaan" : (isMax ? "⚠ Akar masalah" : "Layer " + (depth+1));
+    html += '<div class="tnode depth-'+depth+(isMax?' depth-max':'')+'">'
+      + '<div class="tbox"><div class="depth-tag">'+esc(tag)+'</div>'
+      + '<div class="tt">'+esc(n.title)+'</div>'
+      + (n.description ? '<div class="td">'+esc(n.description)+'</div>' : '')
+      + '</div>'
+      + (kids.length ? renderLayerTree(kids, depth+1) : '')
+      + '</div>';
+  });
+  return html + '</div>';
+}
+
+function renderWhys(nodes){
+  if(!nodes || !nodes.length) return '<p class="empty-note">Tidak ada rantai why.</p>';
+  let html = "";
+  nodes.forEach(function(n){
+    const kids = n.children || [];
+    html += '<div class="why">'
+      + '<div class="why-head">❓ ' + esc(n.question || "Mengapa?") + '</div>'
+      + '<div class="why-body">' + esc(n.answer || "")
+      + (n.is_fundamental ? ' <span class="badge b-fakta" style="margin-left:6px">◆ FUNDAMENTAL</span>' : '')
+      + '</div>'
+      + (kids.length ? '<div class="why-children">'+renderWhys(kids)+'</div>' : '')
+      + '</div>';
+  });
+  return html;
+}
+
+function secHead(num, title){
+  return '<div class="sec-head"><div class="sec-num">'+num+'</div>'
+    + '<div><h3>'+esc(title)+'</h3><p>'+esc(STEP_DESC[num-1])+'</p></div></div>';
+}
+
+function renderOutput(d){
+  const f = d.fundamentals || {};
+  let h = "";
+
+  /* ringkasan reframe */
+  h += '<div class="reframe"><div class="lbl">🎯 Problem Reframe</div><p><b>'+esc(d.problem_reframed||"-")+'</b></p></div>';
+  h += '<div class="reframe"><div class="lbl">🏁 Desired Outcome (diperjelas)</div><p>'+esc(d.desired_outcome_clarified||"-")+'</p></div>';
+
+  /* 1 */
+  h += '<section class="sec card">'+secHead(1,"Pahami Masalah")
+    + renderLayerTree(d.layers, 0) + '</section>';
+
+  /* 2 */
+  let rows = (d.assumptions||[]).map(function(a){
+    return '<tr><td>'+esc(a.statement)+'</td><td>'+typeBadge(a.type)+'</td>'
+      + '<td>'+scoreBadge(a.risk_score)+'</td><td>'+esc(a.reason)+'</td></tr>';
+  }).join("");
+  h += '<section class="sec card">'+secHead(2,"Audit Asumsi")
+    + '<div class="tbl-wrap"><table><thead><tr><th>Asumsi</th><th>Tipe</th><th>Risk Score</th><th>Alasan</th></tr></thead><tbody>'
+    + (rows || '<tr><td colspan="4" class="empty-note">Tidak ada asumsi teridentifikasi.</td></tr>')
+    + '</tbody></table></div></section>';
+
+  /* 3 */
+  let reqs = (d.requirements||[]).map(function(r){
+    return '<div class="req-card"><h4>📌 '+esc(r.item)+'</h4><dl>'
+      + '<dt>Pemilik</dt><dd>'+esc(r.owner)+'</dd>'
+      + '<dt>Tujuan</dt><dd>'+esc(r.purpose)+'</dd>'
+      + '<dt>Bukti</dt><dd>'+esc(r.evidence)+'</dd>'
+      + '<dt>Risiko jika dihapus</dt><dd>'+esc(r.risk_if_removed)+'</dd>'
+      + '</dl></div>';
+  }).join("");
+  h += '<section class="sec card">'+secHead(3,"Requirement Interrogation")
+    + (reqs ? '<div class="req-grid">'+reqs+'</div>' : '<p class="empty-note">Tidak ada requirement teridentifikasi.</p>') + '</section>';
+
+  /* 4 */
+  const comp = f.components||[], cons = f.constraints||[], ev = f.evidence||[], alt = f.alternatives||[];
+  h += '<section class="sec card">'+secHead(4,"Fakta Dasar")
+    + '<div class="req-grid">'
+    + '<div class="req-card"><h4>🎯 Tujuan</h4><p style="font-size:13.5px">'+esc(f.tujuan||"-")+'</p></div>'
+    + '<div class="req-card"><h4>⛓ Constraint</h4><ul style="margin-left:18px;font-size:13px">'+cons.map(function(c){return '<li>'+esc(c)+'</li>'}).join("")+'</ul></div>'
+    + '<div class="req-card"><h4>🧩 Komponen Dasar</h4><ul style="margin-left:18px;font-size:13px">'+comp.map(function(c){return '<li>'+esc(c)+'</li>'}).join("")+'</ul></div>'
+    + '<div class="req-card"><h4>📎 Bukti</h4><ul style="margin-left:18px;font-size:13px">'+ev.map(function(c){return '<li>'+esc(c)+'</li>'}).join("")+'</ul></div>'
+    + '</div>'
+    + (alt.length ? '<div class="req-card" style="margin-top:12px"><h4>🔀 Alternatif Pendekatan</h4><ul style="margin-left:18px;font-size:13px">'+alt.map(function(c){return '<li>'+esc(c)+'</li>'}).join("")+'</ul></div>' : '')
+    + '<h4 style="margin:18px 0 6px;font-size:15px">Rantai 5 Whys</h4>'
+    + renderWhys(f.five_whys)
+    + '<h4 style="margin:18px 0 6px;font-size:15px">◆ Fundamental Truths</h4>'
+    + '<ul class="truth-list">'+(f.fundamental_truths||[]).map(function(t){return '<li>'+esc(t)+'</li>'}).join("")+'</ul>'
+    + '</section>';
+
+  /* 5 */
+  let dels = (d.delete_list||[]).map(function(x){
+    return '<tr><td><b>'+esc(x.item)+'</b><br><span style="color:var(--muted);font-size:12px">'+esc(x.category)+'</span></td>'
+      + '<td>'+esc(x.reason)+'</td><td>'+esc(x.risk)+'</td>'
+      + '<td>'+scoreBadge(x.deletion_score)+'</td><td>'+recBadge(x.recommendation)+'</td></tr>';
+  }).join("");
+  h += '<section class="sec card">'+secHead(5,"Daftar Hapus")
+    + '<div class="tbl-wrap"><table><thead><tr><th>Item</th><th>Alasan</th><th>Risiko</th><th>Deletion Score</th><th>Rekomendasi</th></tr></thead><tbody>'
+    + (dels || '<tr><td colspan="5" class="empty-note">Tidak ada kandidat hapus.</td></tr>')
+    + '</tbody></table></div></section>';
+
+  /* 6 */
+  let bas = (d.simplify||[]).map(function(s){
+    return '<div class="ba-area">▸ '+esc(s.area)+'</div>'
+      + '<div class="ba"><div class="col before"><div class="lbl">Before</div>'+esc(s.before)+'</div>'
+      + '<div class="arrow">→</div>'
+      + '<div class="col after"><div class="lbl">After</div>'+esc(s.after)+'</div></div>';
+  }).join("");
+  h += '<section class="sec card">'+secHead(6,"Solusi Sederhana")
+    + (bas || '<p class="empty-note">Tidak ada penyederhanaan diusulkan.</p>') + '</section>';
+
+  /* 7 */
+  const rb = d.rebuild || {};
+  h += '<section class="sec"><div class="rebuild-box">'
+    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><div class="sec-num" style="background:#a5b4fc;color:#1e1b4b">7</div>'
+    + '<div><h3 style="font-size:18px">Bangun Ulang dari Nol</h3><p style="font-size:13px;color:#c7d2fe">'+esc(STEP_DESC[6])+'</p></div></div>'
+    + '<h4>SOLUSI BARU</h4><p>'+esc(rb.solution||"-")+'</p>'
+    + ((rb.steps||[]).length ? '<h4>LANGKAH</h4><ol>'+rb.steps.map(function(s){return '<li>'+esc(s)+'</li>'}).join("")+'</ol>' : '')
+    + ((rb.why_different||[]).length ? '<h4>KENAPA BERBEDA DARI POLA LAMA</h4><ul>'+rb.why_different.map(function(s){return '<li>'+esc(s)+'</li>'}).join("")+'</ul>' : '')
+    + '</div></section>';
+
+  /* 8 */
+  const aa = d.accelerate_automate || {};
+  function aaItems(list, extra){
+    return (list||[]).map(function(a){
+      return '<div class="aa-item"><b>'+esc(a.area)+'</b>'+esc(a.how||"")
+        + (a.expected_gain ? '<br><span style="color:var(--green)">↗ '+esc(a.expected_gain)+'</span>' : '')
+        + (a.prerequisite ? '<br><span style="color:var(--muted)">Syarat: '+esc(a.prerequisite)+'</span>' : '')
+        + (extra && a.risk_if_automated_early ? '<br><span style="color:var(--red)">⚠ Risiko otomasi prematur: '+esc(a.risk_if_automated_early)+'</span>' : '')
+        + '</div>';
+    }).join("") || '<p class="empty-note">—</p>';
+  }
+  h += '<section class="sec card">'+secHead(8,"Otomasi dan Percepatan")
+    + '<div class="aa-warn"><strong>⛔ Aturan keras:</strong> '+esc(aa.note || "percepat dulu, otomasi SELALU paling akhir — tidak pernah sebelum delete & simplify.")+'</div>'
+    + '<div class="aa-grid">'
+    + '<div class="aa-col acc"><h4>⚡ (a) Percepatan — dievaluasi duluan</h4>'+aaItems(aa.accelerate,false)+'</div>'
+    + '<div class="aa-col aut"><h4>🤖 (b) Otomasi — dievaluasi terakhir</h4>'+aaItems(aa.automate,true)+'</div>'
+    + '</div></section>';
+
+  /* 9 */
+  const m = d.mvp || {};
+  function mvpCard(lbl, val){ return '<div class="mvp-card"><div class="lbl">'+lbl+'</div><p>'+esc(val||"-")+'</p></div>'; }
+  h += '<section class="sec card">'+secHead(9,"Rekomendasi MVP")
+    + '<div class="mvp-grid">'
+    + mvpCard("👤 Core User", m.core_user) + mvpCard("🎯 Core Problem", m.core_problem)
+    + mvpCard("💎 Core Promise", m.core_promise) + mvpCard("📥 Core Input", m.core_input)
+    + mvpCard("📤 Core Output", m.core_output)
+    + '</div>'
+    + '<div class="deferred"><div class="lbl">⏳ Ditunda (bukan MVP)</div><ul>'
+    + ((m.deferred||[]).map(function(x){return '<li>'+esc(x)+'</li>'}).join("") || '<li class="empty-note">—</li>')
+    + '</ul></div></section>';
+
+  /* 10 */
+  const vals = (d.validation||[]).slice().sort(function(a,b){return (b.risk_score||0)-(a.risk_score||0);});
+  let vh = vals.map(function(v){
+    const rs = parseInt(v.risk_score,10)||0;
+    const cls = rs >= 7 ? "" : rs >= 4 ? "mid" : "low";
+    return '<div class="val-card '+cls+'"><h4>🧪 '+esc(v.assumption)+' '+scoreBadge(rs)+'</h4>'
+      + '<div style="font-size:13.5px"><b>Hipotesis:</b> '+esc(v.hypothesis)+'</div>'
+      + '<div class="val-meta"><span><b>Metode:</b> '+esc(v.method)+'</span>'
+      + '<span><b>Metrik:</b> '+esc(v.metric)+'</span>'
+      + '<span><b>Durasi:</b> '+esc(v.duration)+'</span></div></div>';
+  }).join("");
+  h += '<section class="sec card">'+secHead(10,"Validasi")
+    + (vh || '<p class="empty-note">Tidak ada rencana eksperimen.</p>') + '</section>';
+
+  /* toolbar */
+  h += '<div class="toolbar">'
+    + '<button class="btn btn-ghost" id="btn-download">⬇ Unduh Laporan (.md)</button>'
+    + '<button class="btn btn-ghost" id="btn-print">🖨 Cetak / PDF</button>'
+    + '<button class="btn btn-ghost" id="btn-again">↺ Analisis Baru</button>'
+    + '</div>';
+
+  return h;
+}
+
+/* ---------- progress ---------- */
+let progTimer = null;
+function showProgress(){
+  $("input-card").style.display = "none";
+  $("err-box").classList.remove("show");
+  $("output").classList.remove("show");
+  const ps = $("prog-steps");
+  ps.innerHTML = STEPS.map(function(s,i){
+    return '<div class="prog-step" id="ps-'+i+'"><b style="color:inherit">'+(i+1)+'.</b> '+esc(s)+'</div>';
+  }).join("");
+  $("progress").classList.add("show");
+  let cur = 0;
+  progTimer = setInterval(function(){
+    if(cur > 0) $("ps-"+(cur-1)).className = "prog-step done";
+    if(cur < STEPS.length){
+      $("ps-"+cur).className = "prog-step active";
+      $("prog-label").textContent = "Langkah " + (cur+1) + "/10: " + STEP_DESC[cur];
+      cur++;
+    }
+  }, 900);
+}
+function hideProgress(){
+  if(progTimer){ clearInterval(progTimer); progTimer = null; }
+  $("progress").classList.remove("show");
+}
+
+/* ---------- analyze ---------- */
+let lastResult = null, lastInput = null;
+
+async function doAnalyze(){
+  if(!settingsReady()){
+    openSettings();
+    showConn(false, "Isi dulu URL endpoint, API key (jika perlu), dan nama model — lalu Simpan.");
+    window.scrollTo({top:0, behavior:"smooth"});
+    return;
+  }
+  const inp = {
+    problem: $("f-problem").value.trim(),
+    user: $("f-user").value.trim(),
+    outcome: $("f-outcome").value.trim(),
+    current: $("f-current").value.trim(),
+    constraint: $("f-constraint").value.trim()
+  };
+  if(!inp.problem){
+    $("f-problem").focus();
+    $("f-problem").style.borderColor = "var(--red)";
+    setTimeout(function(){ $("f-problem").style.borderColor = ""; }, 1800);
+    return;
+  }
+  try{ localStorage.setItem(LS_INPUT, JSON.stringify(inp)); }catch(e){}
+  showProgress();
+  $("btn-analyze").disabled = true;
+  try{
+    const raw = await callAI(
+      [{role:"system", content: buildSystemPrompt()},
+       {role:"user", content: buildUserPrompt(inp)}],
+      8000
+    );
+    const data = extractJSON(raw);
+    lastResult = data; lastInput = inp;
+    hideProgress();
+    $("output").innerHTML = renderOutput(data);
+    $("output").classList.add("show");
+    wireOutputButtons();
+    window.scrollTo({top: $("output").offsetTop - 70, behavior:"smooth"});
+  }catch(e){
+    hideProgress();
+    const eb = $("err-box");
+    let tips = "";
+    if(String(e.message).indexOf("NETWORK") === 0){
+      tips = "<ul><li>URL endpoint salah atau server tidak menyala.</li><li>Endpoint lokal (localhost) butuh dijalankan & proxy CORS jika diakses dari file/hosting.</li><li>Periksa lagi di ⚙️ Pengaturan lalu Test Koneksi.</li></ul>";
+    } else if(String(e.message).indexOf("API error") === 0){
+      tips = "<ul><li>API key salah / kedaluwarsa, atau nama model tidak tersedia di endpoint.</li><li>Untuk OpenRouter, model ditulis seperti <code>openai/gpt-4o-mini</code>.</li></ul>";
+    } else {
+      tips = "<ul><li>Respons AI tidak bisa diparse — coba klik Breakdown lagi.</li></ul>";
+    }
+    eb.innerHTML = "<strong>❌ Analisis gagal:</strong> " + esc(e.message) + tips;
+    eb.classList.add("show");
+    eb.scrollIntoView({behavior:"smooth", block:"center"});
+  }
+  $("btn-analyze").disabled = false;
+}
+
+function checkVaguenessThenAnalyze(){
+  const t = $("f-problem").value.trim();
+  if(!t){ doAnalyze(); return; }
+  const issues = vaguenessIssues(t);
+  if(issues.length){
+    $("vague-list").innerHTML = "<ul style='margin-left:18px'>" + issues.map(function(i){return "<li>"+esc(i)+"</li>"}).join("") + "</ul>";
+    $("vague-warn").classList.add("show");
+    $("vague-warn").scrollIntoView({behavior:"smooth", block:"center"});
+  } else {
+    $("vague-warn").classList.remove("show");
+    doAnalyze();
+  }
+}
+
+/* ---------- markdown export ---------- */
+function toMarkdown(){
+  if(!lastResult) return "";
+  const d = lastResult, f = d.fundamentals || {};
+  const L = [];
+  L.push("# Deciq — First-Principles Breakdown");
+  L.push("");
+  L.push("**Problem statement:** " + (lastInput ? lastInput.problem : ""));
+  L.push("");
+  L.push("## 🎯 Problem Reframe"); L.push(d.problem_reframed || "-"); L.push("");
+  L.push("## 🏁 Desired Outcome"); L.push(d.desired_outcome_clarified || "-"); L.push("");
+  function treeMd(nodes, depth){
+    (nodes||[]).forEach(function(n){
+      L.push("  ".repeat(depth) + "- **" + (n.title||"") + "**: " + (n.description||""));
+      treeMd(n.children||[], depth+1);
+    });
+  }
+  L.push("## 1. Pahami Masalah"); treeMd(d.layers||[], 0); L.push("");
+  L.push("## 2. Audit Asumsi");
+  L.push("| Asumsi | Tipe | Risk Score | Alasan |"); L.push("|---|---|---|---|");
+  (d.assumptions||[]).forEach(function(a){ L.push("| "+a.statement+" | "+a.type+" | "+a.risk_score+"/10 | "+(a.reason||"")+" |"); });
+  L.push("");
+  L.push("## 3. Requirement Interrogation");
+  (d.requirements||[]).forEach(function(r){
+    L.push("- **"+r.item+"** — Pemilik: "+r.owner+"; Tujuan: "+r.purpose+"; Bukti: "+r.evidence+"; Risiko dihapus: "+r.risk_if_removed);
+  });
+  L.push("");
+  L.push("## 4. Fakta Dasar");
+  L.push("- Tujuan: " + (f.tujuan||"-"));
+  L.push("- Constraints: " + (f.constraints||[]).join("; "));
+  L.push("- Komponen: " + (f.components||[]).join("; "));
+  function whyMd(nodes, depth){
+    (nodes||[]).forEach(function(n){
+      L.push("  ".repeat(depth) + "- ❓ " + (n.question||"") + " → " + (n.answer||"") + (n.is_fundamental ? " ◆FUNDAMENTAL" : ""));
+      whyMd(n.children||[], depth+1);
+    });
+  }
+  L.push("- 5 Whys:"); whyMd(f.five_whys||[], 1);
+  L.push("- Fundamental truths:"); (f.fundamental_truths||[]).forEach(function(t){ L.push("  - "+t); });
+  L.push("");
+  L.push("## 5. Daftar Hapus");
+  L.push("| Item | Alasan | Risiko | Deletion Score | Rekomendasi |"); L.push("|---|---|---|---|---|");
+  (d.delete_list||[]).forEach(function(x){ L.push("| "+x.item+" | "+x.reason+" | "+x.risk+" | "+x.deletion_score+"/10 | "+x.recommendation+" |"); });
+  L.push("");
+  L.push("## 6. Solusi Sederhana");
+  (d.simplify||[]).forEach(function(s){ L.push("- **"+s.area+"**\n  - Before: "+s.before+"\n  - After: "+s.after); });
+  L.push("");
+  const rb = d.rebuild||{};
+  L.push("## 7. Bangun Ulang"); L.push(rb.solution||"-");
+  (rb.steps||[]).forEach(function(s,i){ L.push((i+1)+". "+s); });
+  L.push("Kenapa berbeda:"); (rb.why_different||[]).forEach(function(s){ L.push("- "+s); }); L.push("");
+  const aa = d.accelerate_automate||{};
+  L.push("## 8. Percepatan & Otomasi"); L.push("_"+(aa.note||"Otomasi selalu paling akhir.")+"_"); L.push("");
+  L.push("### Percepat:"); (aa.accelerate||[]).forEach(function(a){ L.push("- **"+a.area+"**: "+a.how+" ("+a.expected_gain+")"); });
+  L.push("### Otomasi:"); (aa.automate||[]).forEach(function(a){ L.push("- **"+a.area+"**: "+a.how+" | Syarat: "+a.prerequisite+" | Risiko prematur: "+a.risk_if_automated_early); });
+  L.push("");
+  const m = d.mvp||{};
+  L.push("## 9. MVP"); L.push("- Core user: "+m.core_user); L.push("- Core problem: "+m.core_problem);
+  L.push("- Core promise: "+m.core_promise); L.push("- Core input: "+m.core_input); L.push("- Core output: "+m.core_output);
+  L.push("- Ditunda: " + (m.deferred||[]).join("; ")); L.push("");
+  L.push("## 10. Validasi");
+  (d.validation||[]).forEach(function(v){
+    L.push("- **"+v.assumption+"** ("+v.risk_score+"/10) — Hipotesis: "+v.hypothesis+" | Metode: "+v.method+" | Metrik: "+v.metric+" | Durasi: "+v.duration);
+  });
+  L.push("");
+  L.push("---"); L.push("_Dibuat dengan Deciq — first-principles problem breakdown_");
+  return L.join("\n");
+}
+
+function wireOutputButtons(){
+  const dl = $("btn-download");
+  if(dl) dl.onclick = function(){
+    const blob = new Blob([toMarkdown()], {type:"text/markdown;charset=utf-8"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "deciq-breakdown.md";
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  };
+  const pr = $("btn-print");
+  if(pr) pr.onclick = function(){ window.print(); };
+  const ag = $("btn-again");
+  if(ag) ag.onclick = function(){
+    $("output").classList.remove("show");
+    $("output").innerHTML = "";
+    $("input-card").style.display = "";
+    window.scrollTo({top:0, behavior:"smooth"});
+  };
+}
+
+/* ---------- example ---------- */
+const EXAMPLE = {
+  problem: "Penjualan ebook MPASI 'Bye Bye GTM!' stagnan di 5 copy per minggu, padahal traffic landing page naik 3x lipat dalam sebulan terakhir. Banyak pengunjung baca sampai bawah tapi tidak klik tombol order WhatsApp.",
+  user: "Ibu muda 25–35 tahun, anak usia 6–12 bulan, baru pertama kali MPASI dan khawatir anak GTM",
+  outcome: "50 copy terjual per minggu dalam 60 hari ke depan",
+  current: "Promosi organik via Instagram Reels + landing page dengan tombol order WhatsApp",
+  constraint: "Budget iklan nol, dikerjakan sendirian, waktu 2 jam per hari"
+};
+
+/* ---------- wiring ---------- */
+function init(){
+  /* steps strip */
+  $("steps-strip").innerHTML = STEPS.map(function(s,i){
+    return '<span class="step-pill"><b>'+(i+1)+'</b>'+esc(s)+'</span>';
+  }).join("");
+
+  /* restore last input */
+  try{
+    const inp = JSON.parse(localStorage.getItem(LS_INPUT) || "null");
+    if(inp){
+      $("f-problem").value = inp.problem || "";
+      $("f-user").value = inp.user || "";
+      $("f-outcome").value = inp.outcome || "";
+      $("f-current").value = inp.current || "";
+      $("f-constraint").value = inp.constraint || "";
+    }
+  }catch(e){}
+
+  $("btn-analyze").onclick = checkVaguenessThenAnalyze;
+  $("btn-proceed-anyway").onclick = function(){ $("vague-warn").classList.remove("show"); doAnalyze(); };
+  $("btn-clarify").onclick = function(){ $("vague-warn").classList.remove("show"); $("f-problem").focus(); };
+  $("btn-example").onclick = function(){
+    $("f-problem").value = EXAMPLE.problem;
+    $("f-user").value = EXAMPLE.user;
+    $("f-outcome").value = EXAMPLE.outcome;
+    $("f-current").value = EXAMPLE.current;
+    $("f-constraint").value = EXAMPLE.constraint;
+    $("f-problem").focus();
+  };
+
+  /* settings */
+  $("btn-settings").onclick = openSettings;
+  $("btn-close-settings").onclick = closeSettings;
+  $("settings-modal").addEventListener("click", function(e){ if(e.target === this) closeSettings(); });
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape") closeSettings(); });
+  $("btn-save-settings").onclick = function(){
+    const s = {
+      endpoint: $("s-endpoint").value.trim(),
+      apikey: $("s-apikey").value.trim(),
+      model: $("s-model").value.trim()
+    };
+    if(!s.endpoint || !s.model){
+      showConn(false, "URL endpoint dan nama model wajib diisi.");
+      return;
+    }
+    saveSettings(s);
+    showConn(true, "✓ Pengaturan tersimpan di browser ini.");
+    setTimeout(closeSettings, 900);
+  };
+  $("btn-test-conn").onclick = async function(){
+    const btn = this;
+    btn.disabled = true; btn.textContent = "Menghubungi…";
+    const prev = { endpoint: $("s-endpoint").value.trim(), apikey: $("s-apikey").value.trim(), model: $("s-model").value.trim() };
+    const saved = loadSettings();
+    saveSettings(prev);
+    try{
+      const reply = await callAI([{role:"user", content:"Balas hanya dengan kata: OK"}], 10);
+      saveSettings(saved);
+      if(/ok/i.test(reply)) showConn(true, "✓ Koneksi berhasil! Model merespons: " + reply.trim().slice(0,60));
+      else showConn(true, "✓ Terhubung. Respons model: " + reply.trim().slice(0,80));
+    }catch(e){
+      saveSettings(saved);
+      showConn(false, "✗ Gagal: " + e.message);
+    }
+    btn.disabled = false; btn.textContent = "Test Koneksi";
+  };
+}
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

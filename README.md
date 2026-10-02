@@ -20,8 +20,8 @@ Bisa langsung dibuka di browser, di-host di Vercel / GitHub Pages / Netlify.
      selain endpoint di atas. Kosongkan jika endpoint tidak butuh key.
    - **Nama Model** — mis. `gpt-4o-mini`, `openai/gpt-4o-mini`, `llama-3.1-8b`.
 3. Klik **Test Koneksi** untuk memastikan endpoint merespons.
-4. Isi **Problem Statement** (wajib) + konteks: target user, desired outcome,
-   current solution, constraint.
+4. Isi **Masalah** (wajib) + konteks: untuk siapa, hasil yang diinginkan,
+   yang sudah dicoba, kendala.
 5. Klik **⚡ Breakdown dengan First Principles**.
 
 Jika rumusan masalah terlalu kabur, Deciq akan meminta klarifikasi singkat

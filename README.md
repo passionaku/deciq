@@ -109,6 +109,27 @@ Security per user).
      using (auth.uid() = user_id)
      with check (auth.uid() = user_id);
    ```
+   Tabel kedua — `user_settings` — untuk sinkronisasi kredensial
+   (endpoint, API key, nama model AI + Groq) antar perangkat:
+   ```sql
+   create table if not exists public.user_settings (
+     user_id uuid primary key references auth.users(id) on delete cascade,
+     updated_at timestamptz not null default now(),
+     ai_endpoint text,
+     ai_apikey text,
+     ai_model text,
+     groq_key text,
+     groq_model text
+   );
+
+   alter table public.user_settings enable row level security;
+
+   drop policy if exists "Users manage own settings" on public.user_settings;
+   create policy "Users manage own settings"
+     on public.user_settings for all
+     using (auth.uid() = user_id)
+     with check (auth.uid() = user_id);
+   ```
 2. **Authentication → Providers → Email**: pastikan aktif, dan **matikan
    *Confirm email*** (wajib — username login tidak punya inbox untuk verifikasi).
 3. (Opsional) Di **Authentication → Settings**, matikan *Allow new users to sign up*
@@ -116,3 +137,6 @@ Security per user).
 
 Setelah itu buka aplikasi, daftar/masuk dengan username, dan tiap hasil
 breakdown otomatis tersimpan ke menu **🕘 Riwayat** (buka ulang / hapus per item).
+Pengaturan kredensial (endpoint, API key, model AI & Groq) juga otomatis
+tersinkron ke cloud: ditarik saat login, dikirim tiap klik **Simpan** —
+jadi tetap sama di semua perangkat.

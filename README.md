@@ -95,7 +95,7 @@ breakdown ke tabel `analyses`. Anon key sudah tertanam di `index.html`
      target_user text,
      desired_outcome text,
      current_solution text,
-     constraint text,
+     "constraint" text,
      result jsonb not null
    );
 

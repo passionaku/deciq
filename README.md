@@ -44,6 +44,19 @@ dulu sebelum menganalisis.
 
 Hasil bisa diunduh sebagai laporan Markdown atau dicetak ke PDF.
 
+## Voice input (mic per field)
+
+Setiap field input punya tombol **🎤**. Klik untuk merekam suara, klik lagi
+untuk berhenti — hasil rekaman otomatis ditranskripsi dan dimasukkan ke field
+(ditambahkan di akhir jika field sudah berisi teks).
+
+- Transkripsi memakai **Groq STT** (Whisper, `whisper-large-v3-turbo` default),
+  dengan `language: id` untuk akurasi Bahasa Indonesia.
+- Isi **Groq API Key** di ⚙️ Pengaturan → bagian "Groq STT" (gratis di
+  `console.groq.com`). Tanpa key, tombol mic akan membuka halaman pengaturan.
+- Browser harus mendukung `MediaRecorder` + izin mikrofon (Chrome/Edge/Safari
+  modern OK).
+
 ## Struktur repo
 
 ```

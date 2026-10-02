@@ -281,6 +281,14 @@ img.logo-lg{width:64px;height:64px;margin:0 auto 14px}
 .hist-btn:hover{border-color:var(--gold);color:var(--gold-light)}
 .hist-btn.danger:hover{border-color:var(--red);color:var(--red)}
 .hist-empty{text-align:center;padding:26px 10px}
+/* ---------- Settings tabs ---------- */
+.tabs{display:flex;gap:4px;margin:2px 0 18px;border-bottom:1px solid var(--line-soft)}
+.tab-btn{flex:1;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--muted);font-family:var(--font);font-size:13px;font-weight:700;padding:10px 4px;cursor:pointer;transition:.15s}
+.tab-btn:hover{color:var(--gold-light)}
+.tab-btn.active{color:var(--gold-light);border-bottom-color:var(--gold)}
+.tab-panel{display:none}
+.tab-panel.active{display:block;animation:tabIn .18s ease}
+@keyframes tabIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 @media print{
   header.top,.hero,.steps-strip,#input-card,#settings-modal,.toolbar,footer{display:none!important}
   body{background:#fff!important;color:#111}
@@ -413,50 +421,63 @@ img.logo-lg{width:64px;height:64px;margin:0 auto 14px}
 <!-- Settings modal -->
 <div class="modal-bg" id="settings-modal">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="set-title">
-    <h3 id="set-title">⚙️ Pengaturan Model AI</h3>
-    <p class="sub">Deciq memanggil model AI pilihanmu lewat API yang kompatibel dengan format <b>OpenAI Chat Completions</b>. Data tersimpan hanya di browser ini (localStorage).</p>
-    <div class="field">
-      <label for="s-endpoint">URL Endpoint</label>
-      <input type="text" id="s-endpoint" placeholder="https://api.openai.com/v1/chat/completions" autocomplete="off" spellcheck="false">
-      <div class="hint">Contoh: OpenAI, OpenRouter (<code>.../api/v1/chat/completions</code>), atau server lokal seperti LM Studio / Ollama (via proxy yang mendukung CORS).</div>
+    <h3 id="set-title">⚙️ Pengaturan</h3>
+    <p class="sub">Tersimpan di perangkat ini dan tersinkron ke cloud.</p>
+    <div class="tabs" role="tablist">
+      <button class="tab-btn active" data-tab="tab-ai" role="tab">🤖 Model AI</button>
+      <button class="tab-btn" data-tab="tab-voice" role="tab">🎙 Voice Input</button>
+      <button class="tab-btn" data-tab="tab-account" role="tab">🔑 Akun</button>
     </div>
-    <div class="field">
-      <label for="s-apikey">API Key</label>
-      <input type="password" id="s-apikey" placeholder="sk-..." autocomplete="off" spellcheck="false">
-      <div class="hint">🔒 Tidak pernah dikirim ke mana pun kecuali endpoint di atas. Kosongkan jika endpoint tidak butuh key.</div>
+
+    <div class="tab-panel active" id="tab-ai" role="tabpanel">
+      <div class="field">
+        <label for="s-endpoint">URL Endpoint</label>
+        <input type="text" id="s-endpoint" placeholder="https://api.openai.com/v1/chat/completions" autocomplete="off" spellcheck="false">
+        <div class="hint">Format <b>OpenAI Chat Completions</b>. Contoh: OpenAI, OpenRouter (<code>.../api/v1/chat/completions</code>), atau server lokal seperti LM Studio / Ollama (via proxy yang mendukung CORS).</div>
+      </div>
+      <div class="field">
+        <label for="s-apikey">API Key</label>
+        <input type="password" id="s-apikey" placeholder="sk-..." autocomplete="off" spellcheck="false">
+        <div class="hint">🔒 Tidak pernah dikirim ke mana pun kecuali endpoint di atas. Kosongkan jika endpoint tidak butuh key.</div>
+      </div>
+      <div class="field">
+        <label for="s-model">Nama Model</label>
+        <input type="text" id="s-model" placeholder="gpt-4o-mini" autocomplete="off" spellcheck="false">
+        <div class="hint">Contoh: <code>gpt-4o-mini</code>, <code>openai/gpt-4o-mini</code> (OpenRouter), <code>llama-3.1-8b</code> (lokal).</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="btn-test-conn">Test Koneksi</button>
+      </div>
+      <div class="conn-status" id="conn-status"></div>
     </div>
-    <div class="field">
-      <label for="s-model">Nama Model</label>
-      <input type="text" id="s-model" placeholder="gpt-4o-mini" autocomplete="off" spellcheck="false">
-      <div class="hint">Contoh: <code>gpt-4o-mini</code>, <code>openai/gpt-4o-mini</code> (OpenRouter), <code>llama-3.1-8b</code> (lokal).</div>
+
+    <div class="tab-panel" id="tab-voice" role="tabpanel">
+      <div class="field">
+        <label for="s-groqkey">Groq API Key</label>
+        <input type="password" id="s-groqkey" placeholder="gsk-..." autocomplete="off" spellcheck="false">
+        <div class="hint">Untuk transkripsi suara tiap field (Whisper via Groq). 🔒 Hanya dikirim ke <code>api.groq.com</code>. Gratis via <code>console.groq.com</code>.</div>
+      </div>
+      <div class="field">
+        <label for="s-groqmodel">Model STT</label>
+        <input type="text" id="s-groqmodel" placeholder="whisper-large-v3-turbo" autocomplete="off" spellcheck="false">
+        <div class="hint">Default: <code>whisper-large-v3-turbo</code> (cepat & akurat). Alternatif: <code>whisper-large-v3</code>.</div>
+      </div>
     </div>
-    <hr class="set-divider">
-    <div class="set-section-title">🎙 Groq STT — voice input</div>
-    <div class="field">
-      <label for="s-groqkey">Groq API Key</label>
-      <input type="password" id="s-groqkey" placeholder="gsk-..." autocomplete="off" spellcheck="false">
-      <div class="hint">Untuk transkripsi suara tiap field (Whisper via Groq). 🔒 Tersimpan lokal, hanya dikirim ke <code>api.groq.com</code>. Gratis via <code>console.groq.com</code>.</div>
+
+    <div class="tab-panel" id="tab-account" role="tabpanel">
+      <div class="field">
+        <label for="s-newpass">Password baru</label>
+        <input type="password" id="s-newpass" placeholder="••••••••" autocomplete="new-password">
+        <div class="hint">Minimal 6 karakter. Berlaku langsung setelah diganti.</div>
+      </div>
+      <div class="conn-status" id="pass-status"></div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="btn-change-pass">Ganti Password</button>
+      </div>
     </div>
-    <div class="field">
-      <label for="s-groqmodel">Model STT</label>
-      <input type="text" id="s-groqmodel" placeholder="whisper-large-v3-turbo" autocomplete="off" spellcheck="false">
-      <div class="hint">Default: <code>whisper-large-v3-turbo</code> (cepat & akurat). Alternatif: <code>whisper-large-v3</code>.</div>
-    </div>
-    <hr class="set-divider">
-    <div class="set-section-title">🔑 Akun</div>
-    <div class="field">
-      <label for="s-newpass">Password baru</label>
-      <input type="password" id="s-newpass" placeholder="••••••••" autocomplete="new-password">
-      <div class="hint">Minimal 6 karakter. Berlaku langsung setelah diganti.</div>
-    </div>
-    <div class="conn-status" id="pass-status"></div>
-    <div class="btn-row">
-      <button class="btn btn-ghost" id="btn-change-pass">Ganti Password</button>
-    </div>
-    <div class="conn-status" id="conn-status"></div>
-    <div class="btn-row" style="margin-top:16px">
+
+    <div class="btn-row" style="margin-top:18px">
       <button class="btn btn-primary" id="btn-save-settings">Simpan</button>
-      <button class="btn btn-ghost" id="btn-test-conn">Test Koneksi</button>
       <button class="btn btn-ghost" id="btn-close-settings">Tutup</button>
     </div>
   </div>
@@ -524,6 +545,8 @@ function openSettings(){
   $("s-groqkey").value = s.groqKey || "";
   $("s-groqmodel").value = s.groqModel || "";
   hideConn();
+  const firstTab = document.querySelector(".tab-btn");
+  if(firstTab) firstTab.click();
   $("settings-modal").classList.add("show");
 }
 function closeSettings(){ $("settings-modal").classList.remove("show"); }
@@ -1445,6 +1468,17 @@ function init(){
   }catch(e){}
 
   $("btn-analyze").onclick = checkVaguenessThenAnalyze;
+
+  /* settings tabs */
+  document.querySelectorAll(".tab-btn").forEach(function(b){
+    b.onclick = function(){
+      document.querySelectorAll(".tab-btn").forEach(function(x){ x.classList.remove("active"); });
+      document.querySelectorAll(".tab-panel").forEach(function(x){ x.classList.remove("active"); });
+      b.classList.add("active");
+      const p = document.getElementById(b.getAttribute("data-tab"));
+      if(p) p.classList.add("active");
+    };
+  });
 
   /* mic buttons */
   const supported = micSupported();

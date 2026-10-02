@@ -538,7 +538,13 @@ async function callAI(messages, maxTokens){
     throw new Error("API error: "+msg);
   }
   const content = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-  if(!content) throw new Error("Respons API kosong / format tidak dikenali. Pastikan endpoint kompatibel OpenAI Chat Completions.");
+  if(!content){
+    try{ console.warn("Deciq: respons API tak terduga", data); }catch(e){}
+    let keys = "";
+    try{ keys = " Kunci yang diterima: [" + Object.keys(data || {}).join(", ") + "]."; }catch(e){}
+    throw new Error("Respons API tidak berisi teks balasan (HTTP " + res.status + ")." + keys
+      + " Pastikan URL endpoint berakhiran /chat/completions dan model yang dipakai mendukung chat.");
+  }
   return content;
 }
 
